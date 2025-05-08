@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import 'bulma/css/bulma.css';
 import './App.scss';
 
@@ -22,49 +22,41 @@ const goodsFromServer: string[] = [
 ];
 
 export const App: React.FC = () => {
-  const [goods, setGoods] = useState<string[]>([...goodsFromServer]);
   const [sortType, setSortType] = useState<SortType>(SortType.None);
-  const [isReversed, setIsReversed] = useState<boolean>(false);
+  const [isReversed, setIsReversed] = useState(false);
 
-  const handleSort = (type: SortType) => {
-    const sorted = [...goodsFromServer];
+  const getVisibleGoods = () => {
+    const result = [...goodsFromServer];
 
-    if (type === SortType.Alphabetically) {
-      sorted.sort((a, b) => a.localeCompare(b));
-    } else if (type === SortType.ByLength) {
-      sorted.sort((a, b) => a.length - b.length);
+    if (sortType === SortType.Alphabetically) {
+      result.sort((a, b) => a.localeCompare(b));
+    } else if (sortType === SortType.ByLength) {
+      result.sort((a, b) => a.length - b.length);
     }
 
-    setGoods(isReversed ? [...sorted].reverse() : sorted);
+    if (isReversed) {
+      result.reverse();
+    }
+
+    return result;
+  };
+
+  const goods = useMemo(getVisibleGoods, [sortType, isReversed]);
+
+  const handleSort = (type: SortType) => {
     setSortType(type);
   };
 
   const handleReverse = () => {
-    const reversedGoods = [...goods].reverse();
-
-    setGoods(reversedGoods);
     setIsReversed(prev => !prev);
   };
 
   const handleReset = () => {
-    setGoods([...goodsFromServer]);
     setSortType(SortType.None);
     setIsReversed(false);
   };
 
-  const isModified = () => {
-    const base = [...goodsFromServer];
-
-    if (sortType === SortType.Alphabetically) {
-      base.sort((a, b) => a.localeCompare(b));
-    } else if (sortType === SortType.ByLength) {
-      base.sort((a, b) => a.length - b.length);
-    }
-
-    const finalList = isReversed ? [...base].reverse() : base;
-
-    return JSON.stringify(finalList) !== JSON.stringify(goodsFromServer);
-  };
+  const isModified = () => sortType !== SortType.None || isReversed;
 
   const getButtonClass = (active: boolean) =>
     `button ${active ? '' : 'is-light'}`;
